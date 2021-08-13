@@ -18,9 +18,6 @@
 (define (show-time-page request)
   (http-response (number->string (current-seconds))))
 
-(define (do-nothing request)
-  (http-response (list "nothing to see")))
-
 (define (greeting-page request)  
   (http-response (list-ref '("Hi" "Hello") (random 2))))
 
@@ -35,15 +32,6 @@
     (displayln (format "~v: ~v -> ~v~%" name age hobbies))
     (http-response rtn)))
 
-(define (enque request)
-  (let* ([rtn (format "{ \"ok\" : \"that worked \" }")]
-         [data (bytes->string/utf-8 (request-post-data/raw request))]
-         [hsh (string->jsexpr data)]
-         [que-name (hash-ref hsh 'quename)]
-         [que-data (hash-ref hsh 'payload)])
-    (displayln (format "~v: ~v~%" que-name que-data))
-    (http-response rtn)))
-
 
 ;; URL routing table (URL dispatcher).
 (define-values (dispatch generate-url)
@@ -51,7 +39,6 @@
    [("time") show-time-page]
    [("hello") greeting-page]  ; Notice this line.
    [("example-post")  #:method "post" example-post]
-   [("enque") #:method "post" enque]
    [else (error "No page that url.")]))
 
 
