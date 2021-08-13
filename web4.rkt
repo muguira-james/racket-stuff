@@ -5,6 +5,8 @@
 (require json)
 (require data/queue)
 
+(define queu (make-queue))
+
 (define (http-response content)  
   (response/full
     200                  ; HTTP response code.
@@ -16,16 +18,20 @@
       (string->bytes/utf-8 content))))
 
 (define (show-time-page request)
+  ; return the time as an epoc
   (http-response (number->string (current-seconds))))
 
 (define (do-nothing request)
-  (http-response (list "nothing to see")))
+  ; just say nothing useful
+  (http-response "nothing to see"))
 
-(define (greeting-page request)  
+(define (greeting-page request)
+  ; say hi
   (http-response (list-ref '("Hi" "Hello") (random 2))))
 
 ; this is the example-post ...)
 (define (example-post request)
+  ; an example of how to handle a post
   (define rtn (format "{ \"ok\" : \"message ok\" }"))
   (define data (bytes->string/utf-8 (request-post-data/raw request)))
   (let* ([hsh (string->jsexpr data)]
@@ -36,23 +42,39 @@
     (http-response rtn)))
 
 (define (enque request)
+  ; put something in a queue
   (let* ([rtn (format "{ \"ok\" : \"that worked \" }")]
          [data (bytes->string/utf-8 (request-post-data/raw request))]
          [hsh (string->jsexpr data)]
          [que-name (hash-ref hsh 'quename)]
          [que-data (hash-ref hsh 'payload)])
-    (displayln (format "~v: ~v~%" que-name que-data))
-    (http-response rtn)))
+    (begin
+      (enqueue! queu que-data)
+      (displayln (format "enq-name ~v: data ~v~%" que-name que-data))
+      (http-response rtn))))
 
-
+(define (que-list request)
+  ; show me the queue - need  to create many queues now  !!!
+  ; (displayln (format "~v~%" request))
+  (let* ([rtn (format "{ \"ok\" : \"got it\" }")]
+         [data (bytes->string/utf-8 (request-post-data/raw request))]
+         [hsh (string->jsexpr data)]
+         [q-name (hash-ref hsh 'quename)])
+    (begin
+      (let ([good-rtn (format "queue-name : ~v, payload: ~v" q-name (queue->list queu))])
+        (displayln good-rtn)
+        (http-response good-rtn)))))
+         
 ;; URL routing table (URL dispatcher).
 (define-values (dispatch generate-url)
   (dispatch-rules
+   [("") do-nothing]
    [("time") show-time-page]
    [("hello") greeting-page]  ; Notice this line.
    [("example-post")  #:method "post" example-post]
    [("enque") #:method "post" enque]
-   [else (error "No page that url.")]))
+   [("queue-list") #:method "post" que-list]
+   [else (do-nothing)]))
 
 
 
