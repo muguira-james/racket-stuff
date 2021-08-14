@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "command-line-args": "^5.2.0",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {},

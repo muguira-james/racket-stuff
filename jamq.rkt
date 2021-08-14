@@ -5,7 +5,8 @@
 (require json)
 (require data/queue)
 
-(define queu (make-queue))
+(define topic-hash (make-hash))
+; (define queu (make-queue))
 
 (define (http-response content)  
   (response/full
@@ -29,35 +30,48 @@
 
 (define (enque request)
   ; put something in a queue
+  ; input: { topic: "name", payload: "data-type" }
   (let* ([rtn (format "{ \"ok\" : \"that worked \" }")]
          [data (bytes->string/utf-8 (request-post-data/raw request))]
          [hsh (string->jsexpr data)]
          [que-name (hash-ref hsh 'quename)]
          [que-data (hash-ref hsh 'payload)])
     (begin
-      (enqueue! queu que-data)
-      (displayln (format "enq-name ~v: data ~v~%" que-name que-data))
+      (let ([q (make-queue)])
+        (enqueue! q que-data)
+        (hash-set! topic-hash que-name q))
+      
+      (displayln
+       (format "enq: name ~v: data ~v hash-size ~v hash-keys ~v~%" que-name que-data (hash-count topic-hash) (hash-keys topic-hash)))
       (http-response rtn))))
 
-(define (que-list request)
-  ; show me the queue - need  to create many queues now  !!!
+(define (topic-list request)
+  ; show me all the topics
+  ; input: { list-topics: "all"  }
   ; (displayln (format "~v~%" request))
   (let* ([rtn (format "{ \"ok\" : \"got it\" }")]
-         [data (bytes->string/utf-8 (request-post-data/raw request))]
-         [hsh (string->jsexpr data)]
-         [q-name (hash-ref hsh 'quename)])
+         )
     (begin
-      (let ([good-rtn (format "queue-name : ~v, payload: ~v" q-name (queue->list queu))])
+      (let ([good-rtn (format "topics : ~v" (hash-keys topic-hash))])
         (displayln good-rtn)
         (http-response good-rtn)))))
-         
+
+(define (topic-count requests)
+  ; show me a count of topics
+  ; input: { count-topics: "all" }
+  (begin
+    (let ([good-rtn (format "topic count : ~v" (hash-count topic-hash))])
+      (displayln good-rtn)
+      (http-response good-rtn))))
+
 ;; URL routing table (URL dispatcher).
 (define-values (dispatch generate-url)
   (dispatch-rules
    [("") do-nothing]
    [("hello") greeting-page]  ; Notice this line.
    [("enque") #:method "post" enque]
-   [("queue-list") #:method "post" que-list]
+   [("topic-list") topic-list]
+   [("topic-count") topic-count]
    [else (do-nothing)]))
 
 
