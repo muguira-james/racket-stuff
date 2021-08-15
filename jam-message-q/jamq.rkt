@@ -3,8 +3,6 @@
 ; -------------------------------------------
 ; define a simple message queue
 ;
-; this requires MORE bullet proofing !!!
-;
 ;input language
 ;- 2 sides: the user side and  the admin side
 ;- user side provides commands: enqueue, dequeue, list
@@ -70,25 +68,20 @@
 ; (define (handle-a-topic name payload)
 ;  ())
 
-(define (contains-topic key)
+(define (is-member key hsh)
   ;; is key in this hash
-  (if (member key (hash-keys topic-hash))
+  (if (member key (hash-keys hsh))
       #t
       #f))
 
 (define (add-data-to-topic key data)
   ;; check to see if key is in the topic-hash and add data to the correct topic
-  (if (contains-topic key)
+  (if (is-member key topic-hash)
       (enqueue! (hash-ref topic-hash key) data)
       (begin
         (let ([q (make-queue)])
           (enqueue! q data)
           (hash-set! topic-hash key q)))))
-
-(define (get-queue-for-topic topic-name)
-  ; just return the queue for this topic,
-  ;  somebody  else has to check to see if the topic-name exists
-      (hash-ref topic-hash topic-name))
 
 (define (request->jshash request)
   (string->jsexpr (bytes->string/utf-8 (request-post-data/raw request))))
@@ -109,17 +102,11 @@
       (http-response rtn))))
 
 (define (deque request)
-  ; check if topic exists, remove 1st item from topic queue
   (let* ([js-hsh (request->jshash request)]
-         [topic-name (hash-ref js-hsh 'topicname)])
-    (if (contains-topic topic-name)
-        (begin
-          (let* ([datam (dequeue! (get-queue-for-topic topic-name))]
-                [rtn (format "pop a datam: ~v~%" datam)])
-            (displayln rtn)
-            (http-response rtn)))
-        (http-response (format "no topic by that name: ~v" topic-name)))))
-
+         [topic-name (hash-ref js-hsh 'topicname)]
+         [datam (dequeue! (hash-ref topic-hash topic-name))])
+    (displayln (format "pop a datam: ~v~%" datam))
+    (http-response datam)))
 
 (define (topic-list request)
   ; show me all the topics in the topic-hash
