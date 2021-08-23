@@ -51,7 +51,7 @@
 
 (define (do-nothing request)
   ; just say nothing useful
-  (http-response "<div>welcome to <span style="color:blue">jamQ</span></div>"))
+  (http-response "<div>welcome to <span style=\"color:blue\">jamQ</span></div>"))
 
 (define (greeting-page request)
   ; say hi
