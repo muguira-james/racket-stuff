@@ -3,6 +3,8 @@
 ; -------------------------------------------
 ; define a simple message queue
 ;
+; this requires MORE bullet proofing !!!
+;
 ;input language
 ;- 2 sides: the user side and  the admin side
 ;- user side provides commands: enqueue, dequeue, list
@@ -11,20 +13,16 @@
 ; ------------- user side ----------------
 ;
 ;enqueue: format "POST" -> returns message
-;{
-; topic: "name"
-; payload: token | list
-;}
+;{  topic: "name"  payload: token | list}
 ;
 ;dequeue: format "POST" -> returns payload in json
-;{
-; topic: "token"
-;}
+;{ topic: "token" }
 ;
 ; topic-data: format "POST" -> returns list in json
-;{
-; topic: token
-;}
+;{ topic: token }
+;
+; queue-drain: format 'POST" -> return message
+; { topic-name: token }
 ;
 ; ---------- admin side -------------------
 ;
@@ -68,20 +66,25 @@
 ; (define (handle-a-topic name payload)
 ;  ())
 
-(define (is-member key hsh)
+(define (contains-topic key)
   ;; is key in this hash
-  (if (member key (hash-keys hsh))
+  (if (member key (hash-keys topic-hash))
       #t
       #f))
 
 (define (add-data-to-topic key data)
   ;; check to see if key is in the topic-hash and add data to the correct topic
-  (if (is-member key topic-hash)
+  (if (contains-topic key)
       (enqueue! (hash-ref topic-hash key) data)
       (begin
         (let ([q (make-queue)])
           (enqueue! q data)
           (hash-set! topic-hash key q)))))
+
+(define (get-queue-for-topic topic-name)
+  ; just return the queue for this topic,
+  ;  somebody  else has to check to see if the topic-name exists
+      (hash-ref topic-hash topic-name))
 
 (define (request->jshash request)
   (string->jsexpr (bytes->string/utf-8 (request-post-data/raw request))))
@@ -102,11 +105,17 @@
       (http-response rtn))))
 
 (define (deque request)
+  ; check if topic exists, remove 1st item from topic queue
   (let* ([js-hsh (request->jshash request)]
-         [topic-name (hash-ref js-hsh 'topicname)]
-         [datam (dequeue! (hash-ref topic-hash topic-name))])
-    (displayln (format "pop a datam: ~v~%" datam))
-    (http-response datam)))
+         [topic-name (hash-ref js-hsh 'topicname)])
+    (if (contains-topic topic-name)
+        (begin
+          (let* ([datam (dequeue! (get-queue-for-topic topic-name))]
+                [rtn (format "pop a datam: ~v~%" datam)])
+            (displayln rtn)
+            (http-response rtn)))
+        (http-response (format "no topic by that name: ~v" topic-name)))))
+
 
 (define (topic-list request)
   ; show me all the topics in the topic-hash

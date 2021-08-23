@@ -13,20 +13,16 @@
 ; ------------- user side ----------------
 ;
 ;enqueue: format "POST" -> returns message
-;{
-; topic: "name"
-; payload: token | list
-;}
+;{  topic: "name"  payload: token | list}
 ;
 ;dequeue: format "POST" -> returns payload in json
-;{
-; topic: "token"
-;}
+;{ topic: "token" }
 ;
 ; topic-data: format "POST" -> returns list in json
-;{
-; topic: token
-;}
+;{ topic: token }
+;
+; queue-drain: format 'POST" -> return message
+; { topic-name: token }
 ;
 ; ---------- admin side -------------------
 ;
