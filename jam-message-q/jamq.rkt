@@ -6,7 +6,7 @@
 ; - updates required:
 ;   1. catch exceptions
 ;   2. do a better job checking the input  request
-;   3. reply with json
+;   3. reply with json  - DONE!
 ;   4. add tests of the low level queue code (not the http side)
 ;
 ;input language
@@ -48,16 +48,6 @@
 (define topic-hash (make-hash))
 
 
-(define (http-response content)  
-  (response/full
-    200                  ; HTTP response code.
-    #"OK"                ; HTTP response message.
-    (current-seconds)    ; Timestamp.
-    TEXT/HTML-MIME-TYPE  ; MIME type for content.
-    '()                  ; Additional HTTP headers.
-    (list                ; Content (in bytes) to send to the browser.
-      (string->bytes/utf-8 content))))
-
 
 (define (do-nothing request)
   ; just say nothing useful
@@ -88,10 +78,9 @@
 (define (remove-data-from-topic topic-name)
   (if (contains-topic topic-name)
       (begin
-        (let* ([datam (dequeue! (get-queue-for-topic topic-name))]
-               [rtn (format "pop a datam: ~v~%" datam)])
-          (displayln rtn)
-          rtn))
+        (let* ([datam (dequeue! (get-queue-for-topic topic-name))])
+          ;(displayln (format "::->~v" datam)
+          datam))
       (begin
         (let* ([rtn (format "did not find topic ~v~%" topic-name)])
           (display rtn)
@@ -110,8 +99,7 @@
 (define (enque request)
   ; put something in a queue
   ; input: { topic: "name", payload: "data-type" }
-  (let* ([rtn (format "{ \"ok\" : \"that worked \" }")]
-         [hsh (request->jshash request)]
+  (let* ([hsh (request->jshash request)]
          [topic-name (hash-ref hsh 'topicname)]
          [payload-data (hash-ref hsh 'payload)])
     (begin         
@@ -120,43 +108,67 @@
        (format
         "enq: name: ~v: data: ~v hash-size: ~v hash-keys: ~v~%"
         topic-name payload-data (hash-count topic-hash) (hash-keys topic-hash)))
-      (http-response rtn))))
+      (let ([rtn (make-hash)])
+        (hash-set! rtn 'topic-name topic-name)
+        (hash-set! rtn 'data payload-data)
+        (hash-set! rtn 'count (hash-count topic-hash))
+        (hash-set! rtn 'keys (hash-keys topic-hash))
+        (displayln (with-output-to-string (lambda () (write-json  rtn))))
+        (http-response (with-output-to-string (lambda  () (write-json rtn))))))))
 
 (define (deque request)
   ; check if topic exists, remove 1st item from topic queue
   (let* ([js-hsh (request->jshash request)]
          [topic-name (hash-ref js-hsh 'topicname)]
-         [rtn (remove-data-from-topic topic-name)])
+         [rtn (make-hash)]
+         [datam (remove-data-from-topic topic-name)])
     (begin
-      (displayln rtn)
-      (http-response rtn))))
+      (hash-set! rtn 'topic-name topic-name)
+      (hash-set! rtn 'payload datam)
+      (displayln (format ":datam:->~v --> ~v~%" datam rtn ))
+      (displayln (with-output-to-string (lambda () (write-json rtn))))
+      (http-response (with-output-to-string (lambda  () (write-json rtn)))))))
 
 
 (define (topic-list request)
   ; show me all the topics in the topic-hash
   (begin
-    (display  "fooo fooo  foo")
-    (let ([good-rtn (format "topics : ~v" (hash-keys topic-hash))])
-      (displayln good-rtn)
-      (http-response good-rtn))))
+    (let* ([rtn (make-hash)])
+      (hash-set! rtn 'topic-list (hash-keys topic-hash))
+           
+      (displayln (with-output-to-string (lambda () (write-json rtn))))
+      (http-response (with-output-to-string (lambda() (write-json rtn)))))))
 
 (define (topic-count request)
   ; show me a count of topics
   ; input: { count-topics: "all" }
   (begin
-    (let ([good-rtn (format "topic count : ~v" (hash-count topic-hash))])
-      (displayln good-rtn)
-      (http-response good-rtn))))
+    (let ([rtn (make-hash)])
+      (hash-set! rtn 'topic-count (hash-count topic-hash))
+      (displayln (with-output-to-string (lambda () (write-json rtn))))
+      (http-response (with-output-to-string (lambda () (write-json rtn)))))))
 
 (define (topic-data request)
   ; list all data in a topic
   (let* ([hsh (request->jshash request)]
-         [topic-name (hash-ref hsh 'quename)])
-    (begin
-      (let ([rtn (format "~v: ~v ~%" topic-name (queue->list (hash-ref topic-hash topic-name)))])
-        (displayln rtn)
-        (http-response rtn)))))
-      
+         [topic-name (hash-ref hsh 'quename)]
+         [rtn (make-hash)])
+        (hash-set! rtn 'topic-name topic-name)
+        (hash-set!  rtn 'topic-list (queue->list (hash-ref topic-hash topic-name)))
+        (displayln (with-output-to-string (lambda () (write-json rtn))))
+        (http-response (with-output-to-string (lambda () (write-json rtn))))))
+
+
+(define (http-response content)  
+  (response/full
+    200                  ; HTTP response code.
+    #"OK"                ; HTTP response message.
+    (current-seconds)    ; Timestamp.
+    TEXT/HTML-MIME-TYPE  ; MIME type for content.
+    '()                  ; Additional HTTP headers.
+    (list                ; Content (in bytes) to send to the browser.
+      (string->bytes/utf-8 content))))
+
 
 (define-values (dispatch generate-url)
   ;; URL routing table (URL dispatcher).

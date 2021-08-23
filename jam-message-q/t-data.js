@@ -27,7 +27,7 @@ fetch('http://localhost:8000/topic-data', {
     body: JSON.stringify(data),
     headers: { 'Content-Type' : 'application/json' },
 })
-    .then(res => res.text() )
-    .then(txt => console.log(txt));
+    .then(res => res.json() )
+    .then(js => console.log(js));
 
 
