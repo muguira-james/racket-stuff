@@ -3,7 +3,11 @@
 ; -------------------------------------------
 ; define a simple message queue
 ;
-; this requires MORE bullet proofing !!!
+; - updates required:
+;   1. catch exceptions
+;   2. do a better job checking the input  request
+;   3. reply with json
+;   4. add tests of the low level queue code (not the http side)
 ;
 ;input language
 ;- 2 sides: the user side and  the admin side
@@ -81,6 +85,20 @@
           (enqueue! q data)
           (hash-set! topic-hash key q)))))
 
+(define (remove-data-from-topic topic-name)
+  (if (contains-topic topic-name)
+      (begin
+        (let* ([datam (dequeue! (get-queue-for-topic topic-name))]
+               [rtn (format "pop a datam: ~v~%" datam)])
+          (displayln rtn)
+          rtn))
+      (begin
+        (let* ([rtn (format "did not find topic ~v~%" topic-name)])
+          (display rtn)
+          rtn))))
+        
+
+
 (define (get-queue-for-topic topic-name)
   ; just return the queue for this topic,
   ;  somebody  else has to check to see if the topic-name exists
@@ -107,23 +125,20 @@
 (define (deque request)
   ; check if topic exists, remove 1st item from topic queue
   (let* ([js-hsh (request->jshash request)]
-         [topic-name (hash-ref js-hsh 'topicname)])
-    (if (contains-topic topic-name)
-        (begin
-          (let* ([datam (dequeue! (get-queue-for-topic topic-name))]
-                [rtn (format "pop a datam: ~v~%" datam)])
-            (displayln rtn)
-            (http-response rtn)))
-        (http-response (format "no topic by that name: ~v" topic-name)))))
+         [topic-name (hash-ref js-hsh 'topicname)]
+         [rtn (remove-data-from-topic topic-name)])
+    (begin
+      (displayln rtn)
+      (http-response rtn))))
 
 
 (define (topic-list request)
   ; show me all the topics in the topic-hash
-  (let* ([rtn (format "{ \"ok\" : \"got it\" }")])
-    (begin
-      (let ([good-rtn (format "topics : ~v" (hash-keys topic-hash))])
-        (displayln good-rtn)
-        (http-response good-rtn)))))
+  (begin
+    (display  "fooo fooo  foo")
+    (let ([good-rtn (format "topics : ~v" (hash-keys topic-hash))])
+      (displayln good-rtn)
+      (http-response good-rtn))))
 
 (define (topic-count request)
   ; show me a count of topics
@@ -136,7 +151,7 @@
 (define (topic-data request)
   ; list all data in a topic
   (let* ([hsh (request->jshash request)]
-         [topic-name (hash-ref hsh 'topicname)])
+         [topic-name (hash-ref hsh 'quename)])
     (begin
       (let ([rtn (format "~v: ~v ~%" topic-name (queue->list (hash-ref topic-hash topic-name)))])
         (displayln rtn)

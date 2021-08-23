@@ -17,7 +17,7 @@ if (Object.keys(options).length != 0) {
 } 
     
 var data = {
-    topicname: deft_q,
+    quename: deft_q,
 
 }
 console.log("sending...", data)

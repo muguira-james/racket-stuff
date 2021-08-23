@@ -1,12 +1,10 @@
+
 const fetch = require('node-fetch')
 
-var data = {
-    quename: "james"
-}
+var data =  {}
 
-fetch('http://localhost:8000/queue-list', {
-    method: 'post',
-    body: JSON.stringify(data),
+fetch('http://localhost:8000/topic-list', {
+    method: 'GET',
     headers: { 'Content-Type' : 'application/json' },
 })
 
