@@ -51,7 +51,7 @@
 
 (define (do-nothing request)
   ; just say nothing useful
-  (http-response "nothing to see"))
+  (http-response "<div>welcome to <span style="color:blue">jamQ</span></div>"))
 
 (define (greeting-page request)
   ; say hi
@@ -173,7 +173,7 @@
 (define-values (dispatch generate-url)
   ;; URL routing table (URL dispatcher).
   (dispatch-rules
-   [("/") do-nothing]
+   [("") do-nothing]
    [("hello") greeting-page]  ; check to see if the service is working
    [("enque") #:method "post" enque]
    [("deque") #:method "post" deque]
