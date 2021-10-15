@@ -15,30 +15,14 @@
     (list                ; Content (in bytes) to send to the browser.
       (string->bytes/utf-8 content))))
 
-(define (show-time-page request)
-  (http-response (number->string (current-seconds))))
-
-(define (greeting-page request)  
-  (http-response (list-ref '("Hi" "Hello") (random 2))))
-
-; this is the example-post ...)
-(define (example-post request)
-  (define rtn (format "{ \"ok\" : \"message ok\" }"))
-  (define data (bytes->string/utf-8 (request-post-data/raw request)))
-  (let* ([hsh (string->jsexpr data)]
-        [name (hash-ref hsh 'name)]
-        [age (hash-ref hsh 'age)]
-        [hobbies (hash-ref hsh 'hobbies)])
-    (displayln (format "~v: ~v -> ~v~%" name age hobbies))
-    (http-response rtn)))
+(define (hello request)
+  (http-response (list '("hello"))))
 
 
 ;; URL routing table (URL dispatcher).
 (define-values (dispatch generate-url)
   (dispatch-rules
-   [("time") show-time-page]
-   [("hello") greeting-page]  ; Notice this line.
-   [("example-post")  #:method "post" example-post]
+   [("hello") hello]
    [else (error "No page that url.")]))
 
 
