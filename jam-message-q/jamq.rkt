@@ -104,15 +104,12 @@
          [payload-data (hash-ref hsh 'payload)])
     (begin         
       (add-data-to-topic topic-name payload-data)
-      (displayln
-       (format
-        "enq: name: ~v: data: ~v hash-size: ~v hash-keys: ~v~%"
-        topic-name payload-data (hash-count topic-hash) (hash-keys topic-hash)))
+    
       (let ([rtn (make-hash)])
-        (hash-set! rtn 'topic-name topic-name)
-        (hash-set! rtn 'data payload-data)
-        (hash-set! rtn 'count (hash-count topic-hash))
-        (hash-set! rtn 'keys (hash-keys topic-hash))
+        (build-json-response rtn 'cmd "enque")
+        (build-json-response rtn 'topic-name topic-name)
+        (build-json-response rtn 'data payload-data)
+
         (displayln (with-output-to-string (lambda () (write-json  rtn))))
         (http-response (with-output-to-string (lambda  () (write-json rtn))))))))
 
@@ -123,9 +120,8 @@
          [rtn (make-hash)]
          [datam (remove-data-from-topic topic-name)])
     (begin
-      (hash-set! rtn 'topic-name topic-name)
-      (hash-set! rtn 'payload datam)
-      (displayln (format ":datam:->~v --> ~v~%" datam rtn ))
+      (build-json-response rtn 'topic-name topic-name)
+      (build-json-response rtn 'payload  datam)
       (displayln (with-output-to-string (lambda () (write-json rtn))))
       (http-response (with-output-to-string (lambda  () (write-json rtn)))))))
 
@@ -134,8 +130,7 @@
   ; show me all the topics in the topic-hash
   (begin
     (let* ([rtn (make-hash)])
-      (hash-set! rtn 'topic-list (hash-keys topic-hash))
-           
+      (build-json-response rtn 'topic-list (hash-keys topic-hash))
       (displayln (with-output-to-string (lambda () (write-json rtn))))
       (http-response (with-output-to-string (lambda() (write-json rtn)))))))
 
@@ -144,7 +139,7 @@
   ; input: { count-topics: "all" }
   (begin
     (let ([rtn (make-hash)])
-      (hash-set! rtn 'topic-count (hash-count topic-hash))
+      (build-json-response rtn 'topic-count (hash-count topic-hash))
       (displayln (with-output-to-string (lambda () (write-json rtn))))
       (http-response (with-output-to-string (lambda () (write-json rtn)))))))
 
@@ -153,11 +148,33 @@
   (let* ([hsh (request->jshash request)]
          [topic-name (hash-ref hsh 'quename)]
          [rtn (make-hash)])
-        (hash-set! rtn 'topic-name topic-name)
-        (hash-set!  rtn 'topic-list (queue->list (hash-ref topic-hash topic-name)))
+        (build-json-response rtn 'topic-name topic-name)
+        (build-json-response rtn 'topic-list (queue->list (hash-ref topic-hash topic-name)))
         (displayln (with-output-to-string (lambda () (write-json rtn))))
         (http-response (with-output-to-string (lambda () (write-json rtn))))))
 
+(define (drain-queue request)
+  (let* ([hsh (request->jshash request)]
+         [topic-name (hash-ref hsh 'quename)]
+         [rtn (make-hash)])
+    (hash-set! topic-hash topic-name (make-queue))
+    (build-json-response rtn 'cmd "drain-queue")
+    (build-json-response rtn 'topic-name topic-name)
+    (build-json-response rtn 'message (format "drain-queue: ~v: all data deleted" topic-name)
+    (displayln (with-output-to-string (lambda () (write-json rtn))))
+    (http-response (with-output-to-string (lambda ()  (write-json  rtn)))))))
+
+(define (topic-remove request)
+  (let* ([hsh  (request->jshash request)]
+         [topic-name (hash-ref hsh 'quename)]
+         [rtn (make-hash)])
+    (hash-remove! topic-hash topic-name)
+    (build-json-response rtn 'message (format "topic-remove: removed topic ~v" topic-name))
+    (displayln (with-output-to-string (lambda  () (write-json rtn))))
+    (http-response (with-output-to-string (lambda () (write-json rtn))))))
+
+(define (build-json-response hsh key value)
+  (hash-set! hsh key value))
 
 (define (http-response content)  
   (response/full
@@ -180,6 +197,8 @@
    [("topic-list") topic-list]
    [("topic-count") topic-count]
    [("topic-data") #:method "post" topic-data]
+   [("drain-queue") #:method "post" drain-queue]
+   [("topic-remove") #:method "post" topic-remove]
    [else (error "page not found")]))
 
 
