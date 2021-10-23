@@ -43,11 +43,14 @@
 (require web-server/servlet-env)
 (require json)
 (require data/queue)
+(require gregor)
 
 ;; a hash is structured as a topic and a queue
 (define topic-hash (make-hash))
 
-
+(define (hello request)
+  
+  (http-response (format "hello: ~v" (datetime->iso8601 (now)))))
 
 (define (do-nothing request)
   ; just say nothing useful
@@ -191,7 +194,7 @@
   ;; URL routing table (URL dispatcher).
   (dispatch-rules
    [("") do-nothing]
-   [("hello") greeting-page]  ; check to see if the service is working
+   [("hello") hello]  ; check to see if the service is working
    [("enque") #:method "post" enque]
    [("deque") #:method "post" deque]
    [("topic-list") topic-list]
