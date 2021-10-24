@@ -39,6 +39,7 @@
 (require web-server/servlet-env)
 (require json)
 (require data/queue)
+(require gregor)
 
 ;; a hash is structured as a topic and a queue
 (define topic-hash (make-hash))
@@ -55,7 +56,7 @@
       (string->bytes/utf-8 content))))
 
 
-(define (do-nothing request)
+(define (hello request)
   ; just say nothing useful
   (http-response "nothing to see"))
 

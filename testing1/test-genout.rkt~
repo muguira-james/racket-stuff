@@ -1,0 +1,11 @@
+#lang racket
+
+(require racket-unit)
+
+(require "genout.rkt")
+
+(test-suite "explore adding"
+           (test-case "add a  string"
+                      (begin
+                        (add-data-to-topic 'key "value-string")
+                        (check-equal?  (hash-count topic-hash) 1 "correct number of items in hash")

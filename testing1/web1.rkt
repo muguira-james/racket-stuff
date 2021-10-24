@@ -45,7 +45,7 @@
   (dispatch-rules
    [("do") do-nothing]
    [("hello") hello]  ; check to see if the service is working
-   [("add") #:method "post" add]
+   [("enque") #:method "post" add]
    [else (error "page not found")]))
 
 
