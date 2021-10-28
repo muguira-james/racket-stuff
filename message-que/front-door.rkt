@@ -47,8 +47,6 @@
 
 (require "middleware.rkt")
 
-;; a hash is structured as a topic and a queue
-; (define topic-hash (make-hash))
 
 (define (hello request)
   
@@ -62,8 +60,7 @@
   ; say hi
   (http-response (list-ref '("Hi" "Hello") (random 2))))
 
-; (define (handle-a-topic name payload)
-;  ())
+
 (define (enque request)
   ; put something in a queue
   ; input: { topic: "name", payload: "data-type" }
@@ -86,10 +83,8 @@
   (let* ([js-hsh (request->jshash request)]
          [topic-name (hash-ref js-hsh 'topicname)]
          [rtn (make-hash)]
-         [datam (remove-data-from-topic topic-name)])
+         [rtn (remove-data-from-topic topic-name)])
     (begin
-      (build-json-response rtn 'topic-name topic-name)
-      (build-json-response rtn 'payload  datam)
       (displayln (with-output-to-string (lambda () (write-json rtn))))
       (http-response (with-output-to-string (lambda  () (write-json rtn)))))))
 
