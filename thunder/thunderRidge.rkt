@@ -3,6 +3,8 @@
 ;;
 ;; simulate fire propagation along thunder ridge.
 ;;
+;; This  uses Racket's world simulation structures to handle drawing, & key board input.
+;;
 #lang racket
 ; james
 (require 2htdp/universe 2htdp/image)
@@ -110,9 +112,12 @@
 ;;;
 ;;  the rest here  is a ll world handlers
 ;;;
+;; Big-bang uses a "world" struct. It hands this struct to each expression defined in the sim.
+;; Each  of the expressions MUST return a complete world struct
 
 ;
-; return a new ridge, populated with trees. This runs on the tick
+; return a new ridge, populated with trees. This runs on the tick.
+; It might grow trees and it always returns a complete world struct
 (define (tickr w)
     (define ridge (t-ridge-ridge w))
     (t-ridge (grow-trees? whip-up-tree? ridge)))
@@ -126,12 +131,14 @@
         
 ;
 ; draw the ridge scene
+; this does not have to return a world struct
 (define (render w)
   ; (displayln w)
   (show-ridge (t-ridge-ridge w)))
   
 ;
 ; set up and run the simulation with "world", w
+; notice how it starts with a complete  world: (t-ridge (list of spaces on the ridge that might have trees))
 (define  (start )
   (big-bang (t-ridge (make-ridge))
     (to-draw render)
