@@ -9,6 +9,7 @@
 ; james
 (require 2htdp/universe 2htdp/image)
 (require lang/posn)
+(require data/queue)
 
 ;
 ; constants for drawing
@@ -118,7 +119,7 @@
             (make-a-tree/p flag (tree-struct-posn t-struct))
             t-struct)))
 ;
-; loop over the ridge call the input function, f
+; loop over the ridge call the input function, f on each item in the collection
 (define (check-tree-agents? f collection)
   (for/list ((i collection))
              (f i)))
@@ -136,6 +137,16 @@
   (for/list ([x (range 30 LAST-X 40)])
                   (make-a-tree 0 x 90)))
 
+(define (clear-burnt ridge)
+  ; find all sequences of trees (make sure to mark sequences with a burnt tree present)
+  ; for each sequence of trees,
+  ;    if a tree is burnt, change all trees in this sequence to meadow
+  ; return t-riddge
+  (define trees (make-hash))
+  (let ((trees-hash (treeSequences trees ridge)))
+    #t)
+    
+  #t)
 
 ;;;
 ;;;
@@ -190,24 +201,37 @@
 ; (define l (list 0 1 0 1 1 2 1 0 1 1))
 ; (define l (list 1 1 2 0 0 1 1 0 0 1))
 ; (define l (list 1 1 2 0 1 0 1 0 1 0))
-(define l (list 0 1 0 2 0 1  0 1 1 0))
+; (define l (list 0 1 0 2 0 1  0 1 1 0))
+; (define l (list 0 2 1 1 0 2 1 1 0 0))
+(define l (list 0 2 1 1 0 1 1 1 0 0))
 ; (define vv (list->vector l))
-      
+
+
+; returnedsequences is a hash:
+;  start = starting index of the sequence
+;  length = number of trees in sequence
+;  burnt = -1 if no tree is burning ; 2 if  a tree in sequence is burning
     
-(define (za l)
+(define (treeSequences returnedSequences l)
   (define cnt 0)
   (define start -1)
   (define lentrees 0)
+  ;(define returnedSequences (make-hash))
+  (define burn -1)
 
+  ;  acc = the index across the collection
+  ;    l = a collection of tree-structs
   (define (iter acc l)
+
     ;(displayln (format "--> len=~a lis=~a" (length l) l)) 
     
     (cond
       ; end of list found
       [(= 0 (length l))
        (if (= 0 lentrees)
-            (displayln "")
+            (displayln (format "__fini__ : ~a" returnedSequences))
             (displayln (format "_e_ start=~a acc=~a: len=~a" start acc lentrees )))]
+      
       ; not in a string of trees
       [(and (= 0 (first l)) (= 0 lentrees)
             (begin              
@@ -218,19 +242,32 @@
       ; found end of string of trees
       [(and (= 0 (first l)) (> lentrees 0)
             (begin                
-              (displayln (format "_e_ start=~a; acc=~a: len=~a -- ch=~a -> l=~a" start acc lentrees (first l) l ))
+              (displayln (format "_z_ start=~a; acc=~a: len=~a -~a- ch=~a -> l=~a" start acc lentrees burn (first l) l ))
+              (hash-set! returnedSequences cnt (hash "start" start "length" lentrees "burning" burn))
+              (set! cnt (+ cnt 1))
               (set! lentrees 0)
               (set! start -1)
+              (set! burn -1)
               (iter (+ 1 acc) (rest l))))]
 
       ; start a string of trees
       [else
        (begin           
          (set! lentrees (+ lentrees 1))
+         ; (displayln (format "ch = ~a" (first l)))
+         (cond
+           ; is the character i'm looking at a 'fire' char?
+           [(and (> (first l) 1) (= burn -1)
+                 ; yes - set burn = fire
+                 (set! burn 2))])
+         ; if  start is -1 - set it to my char counter
          (if (= start -1)
              (set! start acc)
              #t)
-         ; (displayln (format "_i_start=~a; acc=~a: len=~a -- ch=~a -> l=~a" start acc lentrees (first l) l ))
+         ; (displayln (format "_i_start=~a; acc=~a: len=~a -~a- ch=~a -> l=~a" start acc lentrees burn (first l) l ))
          (iter (+ 1 acc) (rest l)))]))
-(iter 0 l))
+(begin
+  (iter 0 l)
+  ; (displayln (format "\n\n~a" returnedSequences))
+  ))
  

@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:bionic
 WORKDIR /app
 COPY build .
 EXPOSE 8000
